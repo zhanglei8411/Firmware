@@ -73,6 +73,7 @@ private:
 		float airspeed_blend;
 		float airspeed_trans;
 		float front_trans_timeout;
+		float down_pitch_max;
 	} _params_standard;
 
 	struct {
@@ -82,6 +83,7 @@ private:
 		param_t airspeed_blend;
 		param_t airspeed_trans;
 		param_t front_trans_timeout;
+		param_t down_pitch_max;
 	} _params_handles_standard;
 
 	enum vtol_mode {
