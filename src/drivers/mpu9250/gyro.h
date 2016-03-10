@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2015 Mark Charlebois. All rights reserved.
+ *   Copyright (c) 2012-2016 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,85 +31,34 @@
  *
  ****************************************************************************/
 
+class MPU9250;
+
 /**
- * @file px4_posix_impl.cpp
- *
- * PX4 Middleware Wrapper Linux Implementation
+ * Helper class implementing the gyro driver node.
  */
-
-#include <px4_defines.h>
-#include <px4_middleware.h>
-#include <px4_workqueue.h>
-#include <px4_defines.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <signal.h>
-#include <errno.h>
-#include <unistd.h>
-#include "systemlib/param/param.h"
-#include "hrt_work.h"
-#include <drivers/drv_hrt.h>
-#include "px4_time.h"
-#include <pthread.h>
-
-extern pthread_t _shell_task_id;
-
-__BEGIN_DECLS
-
-long PX4_TICKS_PER_SEC = sysconf(_SC_CLK_TCK);
-
-#ifdef CONFIG_SHMEM
-extern void init_params(void);
-#endif
-
-__END_DECLS
-
-namespace px4
+class MPU9250_gyro : public device::CDev
 {
+public:
+	MPU9250_gyro(MPU9250 *parent, const char *path);
+	~MPU9250_gyro();
 
-void init_once(void);
+	virtual ssize_t		read(struct file *filp, char *buffer, size_t buflen);
+	virtual int		ioctl(struct file *filp, int cmd, unsigned long arg);
 
-void init_once(void)
-{
-	_shell_task_id = pthread_self();
-	printf("[init] shell id: %lu\n", (unsigned long)_shell_task_id);
-	work_queues_init();
-	hrt_work_queue_init();
-	hrt_init();
+	virtual int		init();
 
-#ifdef CONFIG_SHMEM
-	PX4_INFO("Syncing params to shared memory\n");
-	init_params();
-#endif
-}
+protected:
+	friend class MPU9250;
 
-void init(int argc, char *argv[], const char *app_name)
-{
-	printf("[init] task name: %s\n", app_name);
-	printf("\n");
-	printf("______  __   __    ___ \n");
-	printf("| ___ \\ \\ \\ / /   /   |\n");
-	printf("| |_/ /  \\ V /   / /| |\n");
-	printf("|  __/   /   \\  / /_| |\n");
-	printf("| |     / /^\\ \\ \\___  |\n");
-	printf("\\_|     \\/   \\/     |_/\n");
-	printf("\n");
-	printf("Ready to fly.\n");
-	printf("\n");
-	printf("\n");
+	void			parent_poll_notify();
 
-	// set the threads name
-#ifdef __PX4_DARWIN
-	(void)pthread_setname_np(app_name);
-#else
-	(void)pthread_setname_np(pthread_self(), app_name);
-#endif
-}
+private:
+	MPU9250			*_parent;
+	orb_advert_t		_gyro_topic;
+	int			_gyro_orb_class_instance;
+	int			_gyro_class_instance;
 
-uint64_t get_time_micros()
-{
-	return hrt_absolute_time();
-}
-
-}
-
+	/* do not allow to copy this class due to pointer data members */
+	MPU9250_gyro(const MPU9250_gyro &);
+	MPU9250_gyro operator=(const MPU9250_gyro &);
+};
